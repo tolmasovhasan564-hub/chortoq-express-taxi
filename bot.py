@@ -3,20 +3,29 @@ import asyncio
 import logging
 from aiohttp import web
 from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
-from aiogram.client.default import DefaultBotProperties
 
-# Logging sozlamasi
+# Logging sozlamalari
 logging.basicConfig(level=logging.INFO)
 
-# Token va Bot obyektlari
+# Tokenni tekshirish va ulash
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+if not BOT_TOKEN:
+    BOT_TOKEN = "BOTFATHER_TOKENINGIZNI_SHU_YERGA_YAZING"  # Agar env ishlamasa zaxira
+
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Render kutadigan soxta HTTP server
+# --- HANDLERS (BUYRUQLAR) ---
+# O'zingizning loyihangizdagi barcha handler fayllarni shu yerda chaqiring:
+try:
+    from handlers import start, client, admin
+    # dp.include_router(...) yoki mos ravishda ulash:
+except Exception as e:
+    logging.error(f"Handlers importida xatolik: {e}")
+
+# Render uchun soxta veb-server
 async def handle(request):
-    return web.Response(text="Bot is live 24/7!")
+    return web.Response(text="Bot running 24/7")
 
 async def start_web_server():
     app = web.Application()
@@ -27,19 +36,9 @@ async def start_web_server():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# Asosiy ishga tushirish funksiyasi
 async def main():
-    # Veb-serverni orqa fonda ishga tushirish
     await start_web_server()
-    
-    # Handlers (buyruq va tugmalar) fayllarini ulash
-    try:
-        from handlers import start, client, admin
-        # Agar handlers papkangizda boshqa fayllar bo'lsa, ularni ham shu yerda import qilasiz
-    except ImportError:
-        pass
-
-    logging.info("Bot va Web Server muvaffaqiyatli ishga tushdi!")
+    logging.info("Bot ishga tushdi va xabarlarni kutmoqda...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
