@@ -4,28 +4,28 @@ import logging
 from aiohttp import web
 from aiogram import Bot, Dispatcher
 
-# Logging sozlamalari
+# Logging
 logging.basicConfig(level=logging.INFO)
 
-# Tokenni tekshirish va ulash
+# Bot va Dispatcher
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-if not BOT_TOKEN:
-    BOT_TOKEN = "BOTFATHER_TOKENINGIZNI_SHU_YERGA_YAZING"  # Agar env ishlamasa zaxira
-
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# --- HANDLERS (BUYRUQLAR) ---
-# O'zingizning loyihangizdagi barcha handler fayllarni shu yerda chaqiring:
-try:
-    from handlers import start, client, admin
-    # dp.include_router(...) yoki mos ravishda ulash:
-except Exception as e:
-    logging.error(f"Handlers importida xatolik: {e}")
+# --- HANDLERS (BUYRUQLARNI ULASH QISMI) ---
+# Papkangizdagi barcha handler fayllarini shu yerga import qiling:
+from handlers import start  # Agar boshqa fayllar bo'lsa (masalan: client, admin), vergul bilan qo'shing
 
-# Render uchun soxta veb-server
+# Routerlarni Dispatcher'ga ulash:
+dp.include_router(start.router)
+# Agar boshqa routerlar bo'lsa, ularni ham qo'shing:
+# dp.include_router(client.router)
+# dp.include_router(admin.router)
+
+
+# --- RENDER VEB-SERVER QISMI ---
 async def handle(request):
-    return web.Response(text="Bot running 24/7")
+    return web.Response(text="Bot is running 24/7!")
 
 async def start_web_server():
     app = web.Application()
@@ -37,8 +37,11 @@ async def start_web_server():
     await site.start()
 
 async def main():
+    # Veb-serverni orqa fonda ishga tushirish
     await start_web_server()
-    logging.info("Bot ishga tushdi va xabarlarni kutmoqda...")
+    logging.info("Bot tayyor va xabarlarni kutmoqda!")
+    
+    # Botni ishga tushirish
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
