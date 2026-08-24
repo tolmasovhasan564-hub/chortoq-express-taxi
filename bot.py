@@ -1,37 +1,25 @@
+import os
 import asyncio
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import CommandStart
-from config import config
-from database.db import init_db
-from keyboards.menu import main_menu
-from handlers.client import router as client_router
-from handlers.driver import router as driver_router
+from aiohttp import web
+from aiogram import Bot, Dispatcher
 
-# Konsolda xatoliklarni ko'rish
-logging.basicConfig(level=logging.INFO)
+# Render port talab qilgani uchun soxta veb-server
+async def handle(request):
+    return web.Response(text="Bot is running!")
 
-bot = Bot(token=config.bot_token.get_secret_value())
-dp = Dispatcher()
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
 
-# Routerlarni ulash
-dp.include_router(client_router)
-dp.include_router(driver_router)
-
-# /start buyrug'i
-@dp.message(CommandStart())
-async def cmd_start(message: types.Message):
-    await message.answer(
-        f"Salom, {message.from_user.full_name}! 👋\n\n"
-        f"Taksi botiga xush kelibsiz! Kerakli bo'limni tanlang:",
-        reply_markup=main_menu
-    )
-
+# Asosiy ishga tushirish qismi
 async def main():
-    await init_db()
-    print("--- Ma'lumotlar bazasi yaratildi va bot ishga tushdi! ---")
-    
-    await bot.delete_webhook(drop_pending_updates=True)
+    await start_web_server()
+    # Bot va Dispatcher obyektlaringizni shu yerda chaqiring
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
